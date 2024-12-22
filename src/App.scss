@@ -1,0 +1,33 @@
+.app-container {
+  .header-container {
+    .btn {
+      margin-right: 15px;
+    }
+    // .bg-blue {
+    //   background-color: #f18585 !important; /* Bootstrap blue color */
+    //   color: white;
+    // }
+    font-weight: bold;
+  }
+}
+
+.app-container {
+  .main-container {
+    .app-content {
+      .list-group {
+        padding: 50px;
+        margin-top: 15px;
+        .list-group-item {
+          padding: 10px;
+          margin-bottom: 20px;
+          .row {
+            margin-bottom: 10px;
+            .row {
+              margin-top: 10px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
