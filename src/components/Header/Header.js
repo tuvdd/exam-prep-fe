@@ -42,13 +42,10 @@ const Header = () => {
                   Add Quiz
                 </NavLink>
                 <NavLink to="/teacher/question-sets" className="nav-link">
-                  Question Set List
+                  Manage Question Set
                 </NavLink>
-                <NavLink to="/teacher/create-question-set" className="nav-link">
-                  Add Question Set
-                </NavLink>
-                <NavLink to="/teacher/create-question" className="nav-link">
-                  Add Question
+                <NavLink to="/teacher/questions" className="nav-link">
+                  Manage Question
                 </NavLink>
               </>
             )}
@@ -56,14 +53,17 @@ const Header = () => {
             {/* Menu for ROLE_ADMIN */}
             {authData?.role === "ROLE_ADMIN" && (
               <>
-                <NavLink to="/admin/statistics" className="nav-link">
+                {/* <NavLink to="/admin/statistics" className="nav-link">
                   Statistics
-                </NavLink>
+                </NavLink> */}
                 <NavLink to="/admin/students" className="nav-link">
                   Manage Students
                 </NavLink>
                 <NavLink to="/admin/teachers" className="nav-link">
                   Manage Teachers
+                </NavLink>
+                <NavLink to="/admin/classes" className="nav-link">
+                  Manage Classes
                 </NavLink>
               </>
             )}

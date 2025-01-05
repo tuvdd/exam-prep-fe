@@ -9,6 +9,8 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import axios from "axios";
+import { useAppContext } from "../../AppContext";
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
@@ -21,23 +23,22 @@ const AdminStatistics = () => {
     totalQuizzes: 0,
     totalQuizAttempts: 0,
   });
+  const { authData, API_BASE_URL } = useAppContext();
 
-  // Mock data to simulate statistics
+  // Fetch data from the API using axios
   useEffect(() => {
     const fetchData = async () => {
-      const mockStats = {
-        totalStudents: 30,
-        totalTeachers: 5,
-        totalQuestions: 70,
-        totalQuestionSets: 14,
-        totalQuizzes: 22,
-        totalQuizAttempts: 57,
-      };
-      setStats(mockStats);
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/statistics`);
+        setStats(response.data);
+        console.log("Fetched statistics data:", response.data);
+      } catch (error) {
+        console.error("Error fetching statistics data:", error);
+      }
     };
 
     fetchData();
-  }, []);
+  }, [authData]);
 
   // Data for the bar charts
   const data1 = {

@@ -39,7 +39,7 @@ const StudentEdit = () => {
 
         const studentData = studentResponse.data;
         setStudentCode(studentData.studentCode);
-        setClassId(studentData.classDtoSet[0]?.id || "");
+        setClassId(studentData.classDto ? studentData.classDto.id : ""); // Only set one classId
         setUserInfo({
           ...studentData.userDto,
           password: "",
@@ -74,7 +74,7 @@ const StudentEdit = () => {
       id: studentId,
       studentCode,
       userDto: { ...userInfo, confirmPassword: undefined },
-      classDtoSet: classId ? [{ id: classId }] : [],
+      classDto: classId ? { id: classId } : null, // Update to use a single classDto
     };
 
     try {

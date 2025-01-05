@@ -1,10 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../AppContext";
-import QuestionSetSelector from "../QuestionSet/QuestionSetSelector";
-import StudentSelector from "./StudentSelector";
+import { Form, Row, Col, Button, Container, Card } from "react-bootstrap";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
-import { Form, Row, Col, Button, Container } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
 
 function CreateQuiz() {
   const { API_BASE_URL, userInfo, authData } = useAppContext();
@@ -12,24 +10,47 @@ function CreateQuiz() {
     title: "",
     startTime: "",
     endTime: "",
-    type: "Private",
+    type: "Public", // Default type is Public
     mode: "Practice",
     studentIds: [],
     questionSetId: 0,
     teacherId: userInfo.id,
   });
 
+  const [selectedQuestionSetDetail, setSelectedQuestionSetDetail] =
+    useState("");
+  const [selectedStudentsDetails, setSelectedStudentsDetails] = useState([]);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [selectedQuestionSetTitle, setSelectedQuestionSetTitle] = useState("");
+  // Check for state passed through navigation (Student and Question Set data)
+  useEffect(() => {
+    if (location.state?.quizData) {
+      setQuizData(location.state.quizData);
+      console.log("Quiz Data:", location.state.quizData);
+      if (location.state?.selectedQuestionSetDetail) {
+        console.log(
+          "Selected Question Set Details:",
+          location.state.selectedQuestionSetDetail
+        );
+        setSelectedQuestionSetDetail(location.state?.selectedQuestionSetDetail);
+      }
+      if (location.state?.selectedStudentsDetails) {
+        setSelectedStudentsDetails(location.state.selectedStudentsDetails);
+      }
+    }
+  }, [location.state]);
 
-  const handleQuestionSetSelect = (selectedQuestionSet) => {
-    setQuizData({ ...quizData, questionSetId: selectedQuestionSet.id });
-    setSelectedQuestionSetTitle(selectedQuestionSet.title);
+  const handleStudentSelect = () => {
+    navigate("/teacher/student-selector", {
+      state: { quizData, selectedQuestionSetDetail },
+    });
   };
 
-  const handleStudentSelect = (selectedStudentIds) => {
-    setQuizData({ ...quizData, studentIds: selectedStudentIds });
+  const handleQuestionSetSelect = () => {
+    navigate("/teacher/question-set-selector", {
+      state: { quizData, selectedStudentsDetails },
+    });
   };
 
   const handleInputChange = (e) => {
@@ -40,7 +61,13 @@ function CreateQuiz() {
   const handleTypeChange = (e) => {
     const { value } = e.target;
     if (value === "Public") {
-      setQuizData({ ...quizData, type: value, studentIds: [] });
+      setQuizData({
+        ...quizData,
+        type: value,
+        studentIds: [],
+        startTime: "2024-01-01T00:00", // Set to very early time
+        endTime: "2024-12-31T23:59", // Set to very late time
+      });
     } else {
       setQuizData({ ...quizData, type: value });
     }
@@ -61,7 +88,7 @@ function CreateQuiz() {
       );
       console.log("Quiz created successfully:", response.data);
       alert("Quiz created successfully!");
-      navigate("/teacher/quizzes");
+      navigate(`/`);
     } catch (error) {
       console.error("Error creating quiz:", error);
     }
@@ -71,7 +98,7 @@ function CreateQuiz() {
     <Container fluid="md">
       <h2 className="text-center my-4">Create Quiz</h2>
       <Form onSubmit={handleSubmit}>
-        {/* Title, Start Time, End Time */}
+        {/* Title, Type, Mode (on the same row) */}
         <Row className="mb-3">
           <Col md={4}>
             <Form.Group controlId="formTitle">
@@ -86,34 +113,6 @@ function CreateQuiz() {
             </Form.Group>
           </Col>
           <Col md={4}>
-            <Form.Group controlId="formStartTime">
-              <Form.Label>Start Time</Form.Label>
-              <Form.Control
-                type="datetime-local"
-                name="startTime"
-                value={quizData.startTime}
-                onChange={handleInputChange}
-                required
-              />
-            </Form.Group>
-          </Col>
-          <Col md={4}>
-            <Form.Group controlId="formEndTime">
-              <Form.Label>End Time</Form.Label>
-              <Form.Control
-                type="datetime-local"
-                name="endTime"
-                value={quizData.endTime}
-                onChange={handleInputChange}
-                required
-              />
-            </Form.Group>
-          </Col>
-        </Row>
-
-        {/* Type and Mode */}
-        <Row className="mb-3">
-          <Col md={6}>
             <Form.Group controlId="formType">
               <Form.Label>Type</Form.Label>
               <Form.Select
@@ -121,12 +120,12 @@ function CreateQuiz() {
                 value={quizData.type}
                 onChange={handleTypeChange}
               >
-                <option value="Private">Private</option>
                 <option value="Public">Public</option>
+                <option value="Private">Private</option>
               </Form.Select>
             </Form.Group>
           </Col>
-          <Col md={6}>
+          <Col md={4}>
             <Form.Group controlId="formMode">
               <Form.Label>Mode</Form.Label>
               <Form.Select
@@ -141,48 +140,102 @@ function CreateQuiz() {
           </Col>
         </Row>
 
-        {/* Students */}
-        {quizData.type === "Private" && (
+        {/* Start Time and End Time (only visible for Private quizzes) */}
+        {quizData.type !== "Public" && (
           <Row className="mb-3">
-            <Col md={8}>
-              <Form.Group controlId="formStudents">
-                <Form.Label>Students</Form.Label>
-                <StudentSelector onSelect={handleStudentSelect} />
+            <Col md={4}>
+              <Form.Group controlId="formStartTime">
+                <Form.Label>Start Time</Form.Label>
+                <Form.Control
+                  type="datetime-local"
+                  name="startTime"
+                  value={quizData.startTime}
+                  onChange={handleInputChange}
+                  required
+                />
               </Form.Group>
             </Col>
             <Col md={4}>
-              <Form.Group>
-                <Form.Label>Selected Students</Form.Label>
-                <div className="border p-2 rounded" style={{ height: "100%" }}>
-                  {quizData.studentIds.length > 0
-                    ? quizData.studentIds.join(", ")
-                    : "None"}
-                </div>
+              <Form.Group controlId="formEndTime">
+                <Form.Label>End Time</Form.Label>
+                <Form.Control
+                  type="datetime-local"
+                  name="endTime"
+                  value={quizData.endTime}
+                  onChange={handleInputChange}
+                  required
+                />
               </Form.Group>
             </Col>
           </Row>
         )}
 
-        {/* Question Set */}
+        {/* Selected Students */}
         <Row className="mb-3">
-          <Col md={8}>
-            <Form.Group controlId="formQuestionSet">
-              <Form.Label>Question Set</Form.Label>
-              <QuestionSetSelector onSelect={handleQuestionSetSelect} />
-            </Form.Group>
+          <Col md={12}>
+            {quizData.type === "Private" && (
+              <Form.Group controlId="formStudents">
+                <Form.Label>Selected Students</Form.Label>
+                <div className="border p-2 rounded">
+                  {selectedStudentsDetails.length > 0 ? (
+                    <Row>
+                      {selectedStudentsDetails
+                        .sort((a, b) => {
+                          const nameA = `${a.firstName} ${a.lastName}`;
+                          const nameB = `${b.firstName} ${b.lastName}`;
+                          return nameA.localeCompare(nameB);
+                        })
+                        .map((student) => (
+                          <Col key={student.id} md={6}>
+                            <Card.Text>
+                              {student.firstName} {student.lastName} -{" "}
+                              {student.studentCode}
+                            </Card.Text>
+                          </Col>
+                        ))}
+                    </Row>
+                  ) : (
+                    "None"
+                  )}
+                </div>
+
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={handleStudentSelect}
+                  className="mt-2"
+                >
+                  Select Students
+                </Button>
+              </Form.Group>
+            )}
           </Col>
-          <Col md={4}>
-            <Form.Group>
+        </Row>
+
+        {/* Selected Question Set */}
+        <Row className="mb-3">
+          <Col md={12}>
+            <Form.Group controlId="formQuestionSet">
               <Form.Label>Selected Question Set</Form.Label>
-              <div className="border p-2 rounded" style={{ height: "100%" }}>
-                {selectedQuestionSetTitle || "None Selected"}
+              <div className="border p-2 rounded">
+                {selectedQuestionSetDetail
+                  ? `${selectedQuestionSetDetail.title} (${selectedQuestionSetDetail.subject})`
+                  : "None Selected"}
               </div>
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={handleQuestionSetSelect}
+                className="mt-2"
+              >
+                Select Question Set
+              </Button>
             </Form.Group>
           </Col>
         </Row>
 
         <div className="text-center">
-          <Button variant="primary" type="submit">
+          <Button variant="primary" size="lg" type="submit">
             Create Quiz
           </Button>
         </div>

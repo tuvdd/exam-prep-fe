@@ -1,55 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { useAppContext } from "../../AppContext";
 import {
   Container,
-  Form,
-  Button,
-  ListGroup,
   Card,
+  Button,
   Alert,
+  Form,
   Row,
   Col,
-  InputGroup,
 } from "react-bootstrap";
+import QuestionSelector from "../Question/QuestionSelector";
+import axios from "axios";
 
 const CreateQuestionSet = () => {
   const { authData, userInfo, API_BASE_URL } = useAppContext();
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
-  const [availableQuestions, setAvailableQuestions] = useState([]);
-  const [filteredQuestions, setFilteredQuestions] = useState([]);
-  const [selectedQuestions, setSelectedQuestions] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedQuestions, setSelectedQuestions] = useState([]); // Initial empty list
   const [error, setError] = useState("");
+  const [showSelector, setShowSelector] = useState(false); // Show selector or main form
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchQuestions = async () => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/teacher/question/all/${userInfo.id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${authData.jwt}`,
-            },
-          }
-        );
-        setAvailableQuestions(response.data);
-        setFilteredQuestions(response.data); // Initialize with full list
-      } catch (error) {
-        console.error("Error fetching questions: ", error);
-        setError("Failed to fetch questions. Please try again.");
-      }
-    };
-
-    fetchQuestions();
-  }, [API_BASE_URL, authData.jwt, userInfo.id]);
-
-  const handleAddQuestion = () => {
-    navigate("/teacher/create-question");
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,7 +29,7 @@ const CreateQuestionSet = () => {
       title,
       subject,
       teacherId: userInfo?.id,
-      questions: selectedQuestions.map((q) => q.id),
+      questions: selectedQuestions.map((q) => ({ id: q.id })),
     };
 
     try {
@@ -80,26 +51,20 @@ const CreateQuestionSet = () => {
     }
   };
 
-  const handleQuestionSelection = (question) => {
-    setSelectedQuestions((prev) =>
-      prev.includes(question)
-        ? prev.filter((q) => q !== question)
-        : [...prev, question]
-    );
+  const handleSelectionComplete = (questions) => {
+    setSelectedQuestions(questions); // Update selected questions
+    setShowSelector(false); // Close selector
   };
 
-  const handleSearchChange = (e) => {
-    const search = e.target.value.toLowerCase();
-    setSearchTerm(search);
-
-    // Filter questions based on the search term
-    const filtered = availableQuestions.filter((question) =>
-      question.questionText.toLowerCase().includes(search)
-    );
-    setFilteredQuestions(filtered);
-  };
-
-  return (
+  return showSelector ? (
+    <QuestionSelector
+      API_BASE_URL={API_BASE_URL}
+      authData={authData}
+      userInfo={userInfo}
+      initialSelectedQuestions={selectedQuestions} // Pass current selected questions
+      onSelectionComplete={handleSelectionComplete}
+    />
+  ) : (
     <Container className="mt-5">
       <Row className="mb-4">
         <Col>
@@ -129,55 +94,26 @@ const CreateQuestionSet = () => {
                 />
               </Form.Group>
 
-              <h4 className="mt-4">Available Questions</h4>
-              <InputGroup className="mb-3">
-                <Form.Control
-                  type="text"
-                  placeholder="Search questions..."
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                />
-              </InputGroup>
-
-              <div
-                style={{
-                  maxHeight: "300px",
-                  overflowY: "auto",
-                  border: "1px solid #ccc",
-                  borderRadius: "5px",
-                  padding: "10px",
-                }}
+              <Button
+                variant="primary"
+                onClick={() => setShowSelector(true)}
+                className="mb-3"
               >
-                {filteredQuestions.length > 0 ? (
-                  <ListGroup>
-                    {filteredQuestions.map((question) => (
-                      <ListGroup.Item
-                        key={question.id}
-                        className={`d-flex justify-content-between align-items-center ${
-                          selectedQuestions.includes(question) ? "active" : ""
-                        }`}
-                      >
-                        <span>{question.questionText}</span>
-                        <Form.Check
-                          type="checkbox"
-                          checked={selectedQuestions.includes(question)}
-                          onChange={() => handleQuestionSelection(question)}
-                        />
-                      </ListGroup.Item>
-                    ))}
-                  </ListGroup>
+                Select Questions
+              </Button>
+
+              <div>
+                <h5>Selected Questions:</h5>
+                {selectedQuestions.length === 0 ? (
+                  <p>No questions selected yet.</p>
                 ) : (
-                  <p>No questions found. Please adjust your search.</p>
+                  <ul>
+                    {selectedQuestions.map((q) => (
+                      <li key={q.id}>{q.questionText}</li>
+                    ))}
+                  </ul>
                 )}
               </div>
-
-              <Button
-                variant="outline-primary"
-                onClick={handleAddQuestion}
-                className="mt-3"
-              >
-                Add New Question
-              </Button>
 
               <div className="text-center mt-4">
                 <Button type="submit" variant="success">

@@ -64,7 +64,7 @@ const CreateStudent = () => {
       userDto: {
         ...userInfo,
       },
-      classDtoSet: classId ? [{ id: classId }] : [], // Adds selected class ID
+      classDto: classId ? [{ id: classId }] : [], // Adds selected class ID
     };
 
     try {
@@ -120,7 +120,7 @@ const CreateStudent = () => {
               phoneNumber: row.PhoneNumber || "",
               address: row.Address || "",
             },
-            classDtoSet: classObj ? [{ id: classObj.id }] : [],
+            classDto: classObj ? [{ id: classObj.id }] : [],
           };
         });
 

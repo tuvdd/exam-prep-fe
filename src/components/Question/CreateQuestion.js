@@ -12,11 +12,31 @@ const CreateQuestion = () => {
   const [questionText, setQuestionText] = useState("");
   const [questionType, setQuestionType] = useState("Multiple Choice");
   const [questionImages, setQuestionImages] = useState([]);
-  const [answers, setAnswers] = useState([
-    { answerText: "", correct: false },
-    { answerText: "", correct: false },
-  ]);
+  const [answers, setAnswers] = useState([{ answerText: "", correct: true }]);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [uploadedQuestionImage, setUploadedQuestionImage] = useState(null);
+
+  const handleQuestionImageUpload = (e) => {
+    const files = e.target.files;
+    if (files.length > 0) {
+      const newImages = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newImages.push({ name: file.name, imageUrl: reader.result });
+          if (newImages.length === files.length) {
+            setQuestionImages(newImages);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
+  const handleRemoveQuestionImage = () => {
+    setUploadedQuestionImage(null);
+  };
 
   const handleFileChange = (e) => {
     setUploadedFile(e.target.files[0]);
@@ -41,11 +61,22 @@ const CreateQuestion = () => {
 
   const handleAnswerChange = (index, field, value) => {
     const updatedAnswers = [...answers];
+
     if (field === "correct") {
       updatedAnswers[index][field] = value === "true";
+
+      // For Single Choice or True/False, if one answer is marked correct, others must be incorrect
+      if (questionType === "Single Choice" || questionType === "True/False") {
+        updatedAnswers.forEach((ans, i) => {
+          if (i !== index) {
+            ans.correct = false;
+          }
+        });
+      }
     } else {
       updatedAnswers[index][field] = value;
     }
+
     setAnswers(updatedAnswers);
   };
 
@@ -61,16 +92,91 @@ const CreateQuestion = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (answers.filter((ans) => ans.correct).length < 1) {
+      alert("Questions must atleast one correct answer.");
+      return;
+    }
+    // Validate for single choice - only one correct answer is allowed
+    if (
+      questionType === "Single Choice" &&
+      answers.filter((ans) => ans.correct).length > 1
+    ) {
+      alert("Single Choice questions can only have one correct answer.");
+      return;
+    }
+
+    // Validate answer text for other question types
+    if (answers.some((ans) => ans.answerText.trim() === "")) {
+      alert("Answer text cannot be empty.");
+      return;
+    }
+
+    // Validate True/False - must have one correct and one incorrect answer
+    if (
+      questionType === "True/False" &&
+      answers.filter((ans) => ans.correct).length !== 1 &&
+      answers.filter((ans) => !ans.correct).length !== 1
+    ) {
+      alert(
+        "True/False questions must have one correct and one incorrect answer."
+      );
+      return;
+    }
+
     const questionData = {
       questionText,
       questionType,
       questionSetIds: [],
-      questionImages,
+      questionImages: [], // Empty array initially
       answers,
       teacherId: userInfo?.id,
     };
 
     try {
+      // If images are uploaded, call the API to upload them
+      if (questionImages.length > 0) {
+        const formData = new FormData();
+        questionImages.forEach((image, index) => {
+          // Assuming image is a base64 string, prepare it for upload
+          const byteString = atob(image.imageUrl.split(",")[1]);
+          const arrayBuffer = new ArrayBuffer(byteString.length);
+          const uintArray = new Uint8Array(arrayBuffer);
+          for (let i = 0; i < byteString.length; i++) {
+            uintArray[i] = byteString.charCodeAt(i);
+          }
+          const blob = new Blob([uintArray], { type: "image/jpeg" }); // Assuming images are JPEG
+
+          // Append to FormData
+          formData.append("files", blob, `image_${index}.jpg`);
+        });
+
+        // Upload multiple images to the API
+        const uploadResponse = await axios.post(
+          `${API_BASE_URL}/api/files/upload-multiple`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${authData.jwt}`,
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        // Check if the API returned a list of image URLs
+        if (uploadResponse.data && Array.isArray(uploadResponse.data)) {
+          // Update questionImages with an array of image URLs
+          questionData.questionImages = uploadResponse.data.map((url) => ({
+            id: null, // No ID since it's not provided by the API
+            name: "", // Empty name as requested
+            imageUrl: url, // The image URL returned from the server
+          }));
+        } else {
+          alert("Failed to upload images. Please try again.");
+          return;
+        }
+      }
+
+      // Now save the question with the image URLs
       await axios.post(
         `${API_BASE_URL}/api/teacher/question/save`,
         questionData,
@@ -139,6 +245,11 @@ const CreateQuestion = () => {
     }
   };
 
+  const validateAnswers = () => {
+    const valid = answers.some((ans) => ans.correct === true);
+    return valid;
+  };
+
   return (
     <Container className="mt-4">
       <h3>Upload Questions from Excel</h3>
@@ -155,6 +266,19 @@ const CreateQuestion = () => {
 
       <h2>Create New Question</h2>
       <Form onSubmit={handleSubmit}>
+        <Form.Group className="mb-3" controlId="questionType">
+          <Form.Label>Question Type:</Form.Label>
+          <Form.Select
+            value={questionType}
+            onChange={(e) => setQuestionType(e.target.value)}
+          >
+            <option value="Multiple Choice">Multiple Choice</option>
+            <option value="Single Choice">Single Choice</option>
+            <option value="True/False">True/False</option>
+            <option value="FillType">FillType</option>
+          </Form.Select>
+        </Form.Group>
+
         <Form.Group className="mb-3" controlId="questionText">
           <Form.Label>Question Text:</Form.Label>
           <Form.Control
@@ -165,78 +289,175 @@ const CreateQuestion = () => {
           />
         </Form.Group>
 
-        <Form.Group className="mb-3" controlId="questionType">
-          <Form.Label>Question Type:</Form.Label>
-          <Form.Select
-            value={questionType}
-            onChange={(e) => setQuestionType(e.target.value)}
-          >
-            <option value="Multiple Choice">Multiple Choice</option>
-            <option value="True/False">True/False</option>
-          </Form.Select>
+        {/* Upload Image Button and Preview */}
+        <Form.Group className="mb-3" controlId="questionImageUpload">
+          <Form.Label>Upload Question Images:</Form.Label>
+          <Form.Control
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleQuestionImageUpload}
+          />
+          {questionImages.length > 0 && (
+            <div className="mt-3">
+              {questionImages.map((image, index) => (
+                <div key={index} className="mb-2">
+                  <img
+                    src={image.imageUrl}
+                    alt={`Question Preview ${index + 1}`}
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "200px",
+                      marginBottom: "10px",
+                    }}
+                  />
+                  <Button
+                    variant="danger"
+                    onClick={() => handleDeleteImage(index)}
+                  >
+                    Remove Image
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </Form.Group>
 
-        <h3>Images</h3>
-        {questionImages.map((image, index) => (
-          <InputGroup className="mb-3" key={index}>
-            <Form.Control
-              type="text"
-              placeholder="Image Name"
-              value={image.name}
-              onChange={(e) => handleImageChange(index, "name", e.target.value)}
-            />
-            <Form.Control
-              type="text"
-              placeholder="Image URL"
-              value={image.imageUrl}
-              onChange={(e) =>
-                handleImageChange(index, "imageUrl", e.target.value)
-              }
-            />
-            <Button variant="danger" onClick={() => handleDeleteImage(index)}>
-              X
-            </Button>
-          </InputGroup>
-        ))}
-        <Button variant="primary" onClick={handleAddImage} className="mb-3">
-          Add Image
-        </Button>
-
-        <h3>Answers</h3>
-        {answers.map((answer, index) => (
-          <InputGroup className="mb-3" key={index}>
-            <Form.Control
-              type="text"
-              placeholder="Answer Text"
-              value={answer.answerText}
-              onChange={(e) =>
-                handleAnswerChange(index, "answerText", e.target.value)
-              }
-            />
-            <Form.Select
-              value={answer.correct ? "true" : "false"}
-              onChange={(e) =>
-                handleAnswerChange(index, "correct", e.target.value)
-              }
+        {/* Render fields based on question type */}
+        {questionType !== "True/False" && questionType !== "FillType" && (
+          <>
+            <h3>Answers</h3>
+            {answers.map((answer, index) => (
+              <InputGroup className="mb-3" key={index}>
+                <Form.Control
+                  type="text"
+                  placeholder="Answer Text"
+                  value={answer.answerText}
+                  onChange={(e) =>
+                    handleAnswerChange(index, "answerText", e.target.value)
+                  }
+                  required
+                />
+                <Form.Select
+                  value={answer.correct ? "true" : "false"}
+                  onChange={(e) =>
+                    handleAnswerChange(index, "correct", e.target.value)
+                  }
+                  style={{
+                    backgroundColor: answer.correct ? "green" : "red",
+                    color: "white",
+                  }}
+                >
+                  <option value="true">Correct</option>
+                  <option value="false">Incorrect</option>
+                </Form.Select>
+                <Button
+                  variant="danger"
+                  onClick={() => handleDeleteAnswer(index)}
+                >
+                  X
+                </Button>
+              </InputGroup>
+            ))}
+            <Button
+              variant="primary"
+              onClick={handleAddAnswer}
+              className="mb-3"
             >
-              <option value="true">Correct</option>
-              <option value="false">Incorrect</option>
-            </Form.Select>
-            <Button variant="danger" onClick={() => handleDeleteAnswer(index)}>
-              X
+              Add Answer
             </Button>
-          </InputGroup>
-        ))}
-        <Button variant="primary" onClick={handleAddAnswer} className="mb-3">
-          Add Answer
-        </Button>
+          </>
+        )}
+
+        {/* For True/False questions */}
+        {questionType === "True/False" && (
+          <>
+            <h3>Answers</h3>
+            <InputGroup className="mb-3">
+              <Form.Control
+                type="text"
+                value="True"
+                onChange={(e) =>
+                  handleAnswerChange(0, "answerText", e.target.value)
+                }
+                disabled
+              />
+              <Form.Select
+                value={answers[0]?.correct ? "true" : "false"}
+                onChange={(e) =>
+                  handleAnswerChange(0, "correct", e.target.value)
+                }
+                style={{
+                  backgroundColor: answers[0]?.correct ? "green" : "red",
+                  color: "white",
+                }}
+              >
+                <option value="true">Correct</option>
+                <option value="false">Incorrect</option>
+              </Form.Select>
+            </InputGroup>
+            <InputGroup className="mb-3">
+              <Form.Control
+                type="text"
+                value="False"
+                onChange={(e) =>
+                  handleAnswerChange(1, "answerText", e.target.value)
+                }
+                disabled
+              />
+              <Form.Select
+                value={answers[1]?.correct ? "true" : "false"}
+                onChange={(e) =>
+                  handleAnswerChange(1, "correct", e.target.value)
+                }
+                style={{
+                  backgroundColor: answers[1]?.correct ? "green" : "red",
+                  color: "white",
+                }}
+              >
+                <option value="true">Correct</option>
+                <option value="false">Incorrect</option>
+              </Form.Select>
+            </InputGroup>
+          </>
+        )}
+
+        {/* For FillType */}
+        {questionType === "FillType" && (
+          <>
+            <h3>Answer</h3>
+            <InputGroup className="mb-3">
+              <Form.Control
+                type="text"
+                placeholder="Enter your answer"
+                onChange={(e) =>
+                  handleAnswerChange(0, "answerText", e.target.value)
+                }
+                required
+              />
+              <Form.Select
+                value="true"
+                disabled
+                style={{
+                  backgroundColor: "green",
+                  color: "white",
+                }}
+              >
+                <option value="true">Correct</option>
+              </Form.Select>
+            </InputGroup>
+          </>
+        )}
 
         <div className="mb-4">
-          <Button variant="success" type="submit">
-            Create Question
+          <Button
+            variant="success"
+            type="submit"
+            disabled={!questionText || !validateAnswers()}
+          >
+            Save Question
           </Button>
         </div>
-        <div></div>
       </Form>
     </Container>
   );

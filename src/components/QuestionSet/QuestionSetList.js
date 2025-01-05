@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAppContext } from "../../AppContext";
 import {
   Card,
@@ -10,6 +10,7 @@ import {
   Alert,
   Form,
   InputGroup,
+  Button,
 } from "react-bootstrap";
 import axios from "axios";
 
@@ -22,6 +23,7 @@ const QuestionSetsList = () => {
   } = useAppContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredQuestionSets, setFilteredQuestionSets] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchQuestionSets = async () => {
@@ -56,11 +58,22 @@ const QuestionSetsList = () => {
     }
   }, [searchTerm, questionSetsByTeacher]);
 
+  const handleAddQuestionSet = () => {
+    navigate("/teacher/create-question-set");
+  };
+
   if (!questionSetsByTeacher || questionSetsByTeacher.length === 0) {
     return (
       <Container className="mt-5 text-center">
         <Spinner animation="border" role="status" />
         <p className="mt-3">Loading or no question sets available...</p>
+        <Button
+          variant="primary"
+          onClick={handleAddQuestionSet}
+          className="mt-3"
+        >
+          Add Question Set
+        </Button>
       </Container>
     );
   }
@@ -82,6 +95,13 @@ const QuestionSetsList = () => {
           </InputGroup>
         </Col>
       </Row>
+
+      {/* Add Question Set Button */}
+      <div className="mb-4 text-end">
+        <Button variant="primary" onClick={handleAddQuestionSet}>
+          Add Question Set
+        </Button>
+      </div>
 
       {/* Question Sets */}
       <Row>

@@ -13,8 +13,11 @@ import ProfilePage from "./components/Profile/ProfilePage";
 import QuestionSetDetail from "./components/QuestionSet/QuestionSetDetail";
 import QuestionSetsList from "./components/QuestionSet/QuestionSetList";
 import UpdateQuestionSet from "./components/QuestionSet/UpdateQuestionSet";
+import QuestionList from "./components/Question/QuestionList";
 import CreateQuestion from "./components/Question/CreateQuestion";
 import CreateQuestionSet from "./components/QuestionSet/CreateQuestionSet";
+import QuestionSetSelector from "./components/QuestionSet/QuestionSetSelector";
+import StudentSelector from "./components/Student/StudentSelector";
 import StudentList from "./components/Student/StudentList";
 import StudentEdit from "./components/Student/StudentEdit";
 import TeacherList from "./components/Teacher/TeacherList";
@@ -23,6 +26,13 @@ import CreateTeacher from "./components/Teacher/CreateTeacher";
 import CreateStudent from "./components/Student/CreateStudent";
 import AdminStatistics from "./components/Statistic/AdminStatistics";
 import { AppProvider, useAppContext } from "./AppContext";
+import QuestionSelector from "./components/Question/QuestionSelector";
+import ClassList from "./components/Class/ClassList";
+import CreateClass from "./components/Class/CreateClass";
+import ClassDetail from "./components/Class/ClassDetail";
+import ClassEdit from "./components/Class/ClassEdit";
+import QuestionDetail from "./components/Question/QuestionDetail";
+import QuestionEdit from "./components/Question/QuestionEdit";
 
 const DefaultRoute = () => {
   const { isLogin, authData } = useAppContext();
@@ -47,6 +57,11 @@ const AppRouter = () => (
         <Route path="/teacher/create-quiz" element={<CreateQuiz />} />
         <Route path="/teacher/quiz/:quizId" element={<QuizDetail />} />
         <Route
+          path="/teacher/question-set-selector"
+          element={<QuestionSetSelector />}
+        />
+        <Route path="/teacher/student-selector" element={<StudentSelector />} />
+        <Route
           path="/teacher/question-set/:questionSetId"
           element={<QuestionSetDetail />}
         />
@@ -55,7 +70,16 @@ const AppRouter = () => (
           path="/teacher/update-question-set/:questionSetId"
           element={<UpdateQuestionSet />}
         />
+        <Route path="/teacher/questions" element={<QuestionList />} />
         <Route path="/teacher/create-question" element={<CreateQuestion />} />
+        <Route
+          path="/teacher/question/:questionId"
+          element={<QuestionDetail />}
+        />
+        <Route
+          path="/teacher/edit-question/:questionId"
+          element={<QuestionEdit />}
+        />
         <Route
           path="/teacher/create-question-set"
           element={<CreateQuestionSet />}
@@ -75,6 +99,10 @@ const AppRouter = () => (
         <Route path="/admin/create-teacher" element={<CreateTeacher />} />
         <Route path="/admin/create-student" element={<CreateStudent />} />
         <Route path="/admin/statistics" element={<AdminStatistics />} />
+        <Route path="/admin/classes" element={<ClassList />} />
+        <Route path="/admin/create-class" element={<CreateClass />} />
+        <Route path="/admin/class/:classId" element={<ClassDetail />} />
+        <Route path="/admin/edit-class/:classId" element={<ClassEdit />} />
 
         {/* Shared Routes */}
         <Route path="/login" element={<LoginPage />} />

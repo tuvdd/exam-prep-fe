@@ -49,7 +49,7 @@ const QuestionSetDetail = () => {
           }
         );
         alert("Question set deleted successfully.");
-        navigate(`/question-sets`);
+        navigate(`/teacher/question-sets`);
       } catch (error) {
         console.error("Error deleting question set: ", error);
         alert("Failed to delete the question set. Please try again.");
@@ -68,10 +68,23 @@ const QuestionSetDetail = () => {
 
   return (
     <Container className="mt-5">
-      <h2 className="text-center mb-4">{selectedQuestionSet.title}</h2>
-      <p className="text-muted text-center">
-        Subject: {selectedQuestionSet.subject}
-      </p>
+      <Row className="mb-4">
+        <Col>
+          <Button
+            variant="secondary"
+            onClick={() => navigate(-1)}
+            className="mb-3"
+          >
+            Back
+          </Button>
+          <div className="d-flex flex-column align-items-center">
+            <h2 className="text-center mb-2">{selectedQuestionSet.title}</h2>
+            <p className="text-muted text-center">
+              {selectedQuestionSet.subject}
+            </p>
+          </div>
+        </Col>
+      </Row>
 
       <h3 className="mt-4">Questions:</h3>
       <Row>
@@ -92,7 +105,7 @@ const QuestionSetDetail = () => {
                       <div key={imgIndex} className="mb-2">
                         <img
                           src={image.imageUrl || fallbackImage}
-                          alt={image.name || "Sample Image"}
+                          alt={image.name || "Question Image"}
                           className="img-fluid"
                           style={{
                             width: "100%",
@@ -101,9 +114,6 @@ const QuestionSetDetail = () => {
                           }}
                           onError={(e) => (e.target.src = fallbackImage)}
                         />
-                        <p className="text-muted">
-                          {image.name || "Sample Image"}
-                        </p>
                       </div>
                     ))}
                   </div>

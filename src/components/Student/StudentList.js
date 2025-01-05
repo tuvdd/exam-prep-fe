@@ -70,10 +70,6 @@ const StudentList = () => {
   const filteredStudents = students.filter((student) => {
     const fullName =
       `${student.userDto.firstName} ${student.userDto.lastName}`.toLowerCase();
-    const classes = student.classDtoSet
-      .map((cls) => cls.name)
-      .join(", ")
-      .toLowerCase();
     const query = searchQuery.toLowerCase();
 
     return (
@@ -82,7 +78,7 @@ const StudentList = () => {
       student.userDto.email.toLowerCase().includes(query) ||
       student.userDto.phoneNumber.toLowerCase().includes(query) ||
       student.userDto.address.toLowerCase().includes(query) ||
-      classes.includes(query)
+      (student.classDto && student.classDto.name.toLowerCase().includes(query))
     );
   });
 
@@ -128,13 +124,7 @@ const StudentList = () => {
               <td>{student.userDto.email}</td>
               <td>{student.userDto.phoneNumber}</td>
               <td>{student.userDto.address}</td>
-              <td>
-                {student.classDtoSet.map((cls) => (
-                  <span key={cls.id}>
-                    {cls.name} (Grade {cls.grade})
-                  </span>
-                ))}
-              </td>
+              <td>{student.classDto ? student.classDto.name : "N/A"}</td>
               <td>{student.userDto._active ? "Active" : "Banned"}</td>
               <td>
                 <Button

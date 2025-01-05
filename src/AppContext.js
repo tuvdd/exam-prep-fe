@@ -51,11 +51,11 @@ const AppProvider = ({ children }) => {
   // fetch user information
   useEffect(() => {
     try {
-      if (authData.role === "ROLE_TEACHER") {
-        const fetchTeacherInfo = async () => {
+      if (authData.role === "ROLE_TEACHER" || authData.role === "ROLE_ADMIN") {
+        const fetchUserInfo = async () => {
           try {
             const response = await axios.get(
-              `${API_BASE_URL}/api/teacher/info`,
+              `${API_BASE_URL}/api/authenticate/info`,
               {
                 headers: {
                   Authorization: `Bearer ${authData.jwt}`,
@@ -68,22 +68,7 @@ const AppProvider = ({ children }) => {
             console.error("Error fetching teacher info: ", error);
           }
         };
-        fetchTeacherInfo();
-      } else if (authData.role === "ROLE_ADMIN") {
-        const fetchAdminInfo = async () => {
-          try {
-            const response = await axios.get(`${API_BASE_URL}/api/admin/info`, {
-              headers: {
-                Authorization: `Bearer ${authData.jwt}`,
-                "Content-Type": "application/json",
-              },
-            });
-            setUserInfo(response.data);
-          } catch (error) {
-            console.error("Error fetching admin info: ", error);
-          }
-        };
-        fetchAdminInfo();
+        fetchUserInfo();
       }
     } catch (e) {
       console.log(e);
